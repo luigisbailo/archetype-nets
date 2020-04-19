@@ -2,11 +2,13 @@ name: deepaa
 channels:
   - defaults
 dependencies:
-  - python=3.6.8
+  - python
   - matplotlib
   - seaborn
   - numpy
   - pandas
   - scipy  
   - imageio
-  - tensorflow-gpu=1.12.0
+  - tensorflow
+  - jupyter
+  - tensorflow-probability
