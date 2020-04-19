@@ -55,10 +55,10 @@ def collect_results(data,
                     anneal = 0): 
     """Runs orginal daa code for version = 'original' or Milenas version for version = 'milena' and stores them into into"""
     if version=='luigi':
-        import daa_luigi
+        from nets_benchmarking import  daa_luigi
         res = daa_luigi.build_network()(data, at_loss_factor, target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
     else:
-        import daa
+        from nets_benchmarking import  daa
         res = daa.execute(data,version,at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
     # load and dump pickled results to enable comparison of luigis and other versions:
     try:
