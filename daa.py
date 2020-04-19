@@ -282,7 +282,7 @@ class lib_vae:
 ##########################################################################################################
 ## daa_JAFFE code:
 
-def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0):
+def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0, anneal=0):
     # If error message "Could not connect to any X display." is issued, uncomment the following line:
     #os.environ['QT_QPA_PLATFORM']='offscreen'
     x_train_feat = data['train_feat']
@@ -523,10 +523,16 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     sess.run(tf.global_variables_initializer())
 
     writer = tf.summary.FileWriter(logdir=TENSORBOARD_DIR, graph=sess.graph)
+    kl_loss_max = kl_loss_factor
     for epoch in range(n_epochs):
         if (epoch+1)/n_epochs in np.linspace(0,1,11): print('epoch no {} of {}'.format(epoch+1,n_epochs))
         for b in range(n_batches):
             mb_x, mb_y = get_next_batch(batch_size)
+            
+            
+            if anneal ==1 and epoch <= 100:
+                kl_loss_factor = 0
+                kl_loss_factor += epoch/100 * kl_loss_max
             
             feed_train = {data: mb_x, side_information: mb_y}
             sess.run(optimizer, feed_dict=feed_train)
@@ -572,7 +578,7 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     
     def asarrays(lst):
         return [np.array(i) for i in lst]
-    result_key = (version, at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor)
+    result_key = (version, at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_max,anneal)
     result_df = pd.DataFrame({'dim1': asarrays([x_train_feat[:,0], df['ldim0'], xhat[:,0]]),
                            'dim2': asarrays([x_train_feat[:,1], df['ldim1'], xhat[:,1]]),
                            'target_color': asarrays([x_train_targets, df_targets, yhat])},

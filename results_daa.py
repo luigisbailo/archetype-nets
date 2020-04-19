@@ -51,14 +51,15 @@ def collect_results(data,
                     at_loss_factor=8.0, 
                     target_loss_factor=8.0,
                     recon_loss_factor=4.0,
-                    kl_loss_factor=4.0): 
+                    kl_loss_factor=4.0,
+                    anneal = 0): 
     """Runs orginal daa code for version = 'original' or Milenas version for version = 'milena' and stores them into into"""
     if version=='luigi':
         import daa_luigi
-        res = daa_luigi.build_network()(data, at_loss_factor, target_loss_factor,recon_loss_factor,kl_loss_factor)
+        res = daa_luigi.build_network()(data, at_loss_factor, target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
     else:
         import daa
-        res = daa.execute(data,version,at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor)
+        res = daa.execute(data,version,at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
     # load and dump pickled results to enable comparison of luigis and other versions:
     try:
         with open(into, 'rb') as pickled_results:
@@ -66,7 +67,18 @@ def collect_results(data,
     except:
         results = OrderedDict()
         
-    results.update(res) 
+    def newkey(newdict,collectdict):
+        key, value = list(newdict.items())[0]
+        key_len = len(key)
+        
+        if key in list(collectdict.keys()):
+            key = key + (1,)
+            while key in list(collectdict.keys()):
+                key = key[:key_len] + (key[key_len] + 1,)
+        
+        collectdict.update({key: value})
+
+    newkey(res,results)
     
     with open(into,'wb') as file:
         pickle.dump(results,file)
@@ -98,6 +110,17 @@ def unpack(seq,newtype=None):
             newseq = type(seq)(newseq)
     return newseq    
 
+def rescale(a):
+    """for instance, colors in rgb or list format:
+    a = np.array([[9,4,3],[3,1,1],[15,0,2]])
+    b = [2,10,4]"""
+    c = np.array(a)
+    if c.ndim==1: c = c.reshape((c.shape[-1],-1))
+    cmin,cmax = np.array(c.min(axis=0)).reshape((-1,c.shape[1])), np.array(c.max(axis=0)).reshape((-1,c.shape[1]))
+    c = (c-cmin)/cmax
+    if c.ndim==1: c = c.reshape((c.shape[-1],-1))
+    return c
+
 def plot_results(pickled_results_path):
     """ Plots results comparingly, with lastly added results first."""
     with open(pickled_results_path, 'rb') as pickled_results:
@@ -119,12 +142,11 @@ def plot_results(pickled_results_path):
                 tarvals = [float(i) for i in tarvals]
                 tarmin = min(tarvals)
                 tarmax = max(tarvals)
-                c = (c-tarmin)/tarmax if np.array(c).ndim > 1 else [(i-tarmin)/tarmax for i in c]
-                return c
+                c = (c-tarmin)/(tarmax-tarmin) if np.array(c).ndim > 1 else [(i-tarmin)/tarmax for i in c]
+                return np.array(c)
             
-            c = normalize_colors()
+            c = normalize_colors() #if space!='latent space' else None
             
-            print(modelpara,space,type(c),np.array(c).shape)
             axs[modelpara_ind,space_ind].scatter(df.loc[space,'dim1'],df.loc[space,'dim2'], c=c)
             
             if modelpara_ind==0: axs[modelpara_ind,space_ind].set_title(space, size=15) #fontdict=fontdict)

@@ -20,7 +20,7 @@ import pandas as pd
 
 def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epochs = 100):
     
-    def execute(data, at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0):
+    def execute(data, at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0,anneal = 0):
         def get_zfixed ( dim_latent_space ):
             
             z_fixed_t = np.zeros([dim_latent_space, dim_latent_space + 1])
@@ -125,6 +125,18 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         kl_loss = tf.reduce_sum(kl_loss, axis=-1)
         kl_loss *= -0.5
         
+        # annealing kl_loss parameter (milena):
+        kl_loss_max = kl_loss_factor
+        if anneal == 1:
+            kl_loss_factor = tfk.backend.variable(0.)
+            class NewCallback(tfk.callbacks.Callback):
+                def __init__(self, kl_loss_factor):
+                    self.kl_loss_factor = kl_loss_factor       
+                def on_epoch_end(self, epoch, logs={}):
+                    if epoch <= 100:
+                        tfk.backend.set_value(self.kl_loss_factor, tfk.backend.get_value(self.kl_loss_factor) + epoch/100)
+
+        callbacks = [NewCallback(kl_loss_factor),] if anneal == 1 else None # milena
         
         vae_loss = tf.reduce_mean(recon_loss_factor*reconstruction_loss 
                                   + target_loss_factor*class_loss 
@@ -135,10 +147,12 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         vae.summary()
         
         
+
         vae.fit([x_train,y_train],  
                 epochs=epochs,
                 batch_size=batch_size,
-                validation_data=([x_test,y_test],None))
+                validation_data=([x_test,y_test],None),
+                callbacks = callbacks)
         
         
         
@@ -155,7 +169,7 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         mu1, mu2 = mu.T
         x_test_pred1, x_test_pred2 = x_test_pred.T
         
-        result_key = ('luigi', at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor)
+        result_key = ('luigi', at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_max,anneal)
         result_df = pd.DataFrame({'dim1':[x_test1, mu1, x_test_pred1],
                            'dim2':[x_test2, mu2, x_test_pred2],
                            'target_color':[y_test,[1]*len(mu1),y_test_pred]},
