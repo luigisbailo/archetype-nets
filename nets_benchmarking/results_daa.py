@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import warnings
+from scipy import stats
 warnings.filterwarnings('ignore') # suppresses warnings that arise because original code uses ...
 # ... deprecated tf version after first execution of cell 
 
-def create_data(version=2):
+def create_data(version=2, normalscores=True):
     archs = np.array([[1,0],
                   [2,2],
                   [0,1]])
@@ -38,9 +39,48 @@ def create_data(version=2):
             Y2=Y2/np.max(Y2)
             Y=np.concatenate((np.expand_dims(Y0,axis=1),np.expand_dims(Y1,axis=1),np.expand_dims(Y2,axis=1)),axis=1)
             return data, Y
+    
+    def normal_scores(list_of_arrays):
+    
+        def cumuldistr(counts, avoid1=True):
+            """avoid1==True is needed to ensure that max of given array 
+            is not encoded as inf by subsequent function gausspos"""
+            if avoid1==True: counts = np.append(counts,[1],axis=0)
+            counts = counts/np.sum(counts)
+            for i in range(len(counts)):
+                counts[i] = np.sum(counts[max(i-1,0):i+1])
+            if avoid1==True: counts = counts[:-1]
+            return counts
         
+        def gausspos(cumuldistr):
+            return stats.norm.ppf(cumuldistr)
+        
+        def normal_scores_per_col(col):
+            col = col.astype("float")
+            unique, counts = np.unique(col, return_counts=True)
+            map2gauss = dict(zip(unique,gausspos(cumuldistr(counts))))
+            for j in range(len(col)):
+                col[j] = map2gauss[col[j]]
+            return col
+        
+        for ind in range(len(list_of_arrays)):
+            arr = list_of_arrays[ind]
+            if arr.ndim==1: arr = normal_scores_per_col(arr)
+            if arr.ndim==2: 
+                concat_lst = [np.array([normal_scores_per_col(arr[:,i])]).T for i in range(arr.shape[1])]
+                arr = np.concatenate(tuple(concat_lst),axis=1)
+            if arr.ndim>2: raise Exception('All arrays in list  must have ndim of 1 or 2')
+            list_of_arrays[ind] = arr
+            
+        return list_of_arrays
+    
     x_train_feat, x_train_targets = generate_data (archs,arch_target,100000,noise=0.01)
     x_test_feat, x_test_targets = generate_data (archs,arch_target,1000,noise=0.01)
+    
+    if normalscores==True:
+        [x_train_feat, x_train_targets,x_test_feat, x_test_targets] = normal_scores(
+                                        [x_train_feat, x_train_targets,x_test_feat, x_test_targets])
+    
     datadict = {'train_feat': x_train_feat, 'train_targets': x_train_targets, 
                 'test_feat': x_test_feat, 'test_targets': x_test_targets}
     return datadict
