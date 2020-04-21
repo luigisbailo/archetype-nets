@@ -4,10 +4,11 @@ import numpy as np
 import pickle
 import warnings
 from scipy import stats
+import os
 warnings.filterwarnings('ignore') # suppresses warnings that arise because original code uses ...
 # ... deprecated tf version after first execution of cell 
 
-def create_data(version=2, normalscores=True):
+def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
     archs = np.array([[1,0],
                   [2,2],
                   [0,1]])
@@ -74,8 +75,8 @@ def create_data(version=2, normalscores=True):
             
         return list_of_arrays
     
-    x_train_feat, x_train_targets = generate_data (archs,arch_target,100000,noise=0.01)
-    x_test_feat, x_test_targets = generate_data (archs,arch_target,1000,noise=0.01)
+    x_train_feat, x_train_targets = generate_data (archs,arch_target,no_train,noise=0.01)
+    x_test_feat, x_test_targets = generate_data (archs,arch_target,no_test,noise=0.01)
     
     if normalscores==True:
         [x_train_feat, x_train_targets,x_test_feat, x_test_targets] = normal_scores(
@@ -93,16 +94,23 @@ def collect_results(data,
                     recon_loss_factor=4.0,
                     kl_loss_factor=4.0,
                     anneal = 0): 
-    """Runs orginal daa code for version = 'original' or Milenas version for version = 'milena' and stores them into into"""
+    """Runs orginal daa code for version = 'original'/'luigi'/'milena' and stores them into into"""
     if version=='luigi':
         from nets_benchmarking import  daa_luigi
         res = daa_luigi.build_network()(data, at_loss_factor, target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
     else:
         from nets_benchmarking import  daa
         res = daa.execute(data,version,at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor, anneal)
+    
+    res_path = "results_collections"
+    try: 
+        os.mkdir(res_path)
+    except: 
+        pass
+    
     # load and dump pickled results to enable comparison of luigis and other versions:
     try:
-        with open(into, 'rb') as pickled_results:
+        with open("{}/{}".format(res_path,into), 'rb') as pickled_results:
             results = pickle.load(pickled_results)
     except:
         results = OrderedDict()
@@ -120,7 +128,8 @@ def collect_results(data,
 
     newkey(res,results)
     
-    with open(into,'wb') as file:
+    
+    with open("{}/{}".format(res_path,into),'wb') as file:
         pickle.dump(results,file)
     
 def works(func, *args, **kwargs):
@@ -161,9 +170,10 @@ def rescale(a):
     if c.ndim==1: c = c.reshape((c.shape[-1],-1))
     return c
 
-def plot_results(pickled_results_path):
+def plot_results(res_filename, ignore_color=False):
     """ Plots results comparingly, with lastly added results first."""
-    with open(pickled_results_path, 'rb') as pickled_results:
+    res_path = "results_collections"
+    with open("{}/{}".format(res_path,res_filename), 'rb') as pickled_results:
         results = pickle.load(pickled_results)
         
     n_res = len(results.keys()) if len(results.keys())>1 else 2 # avoids weird error for subplots with 1 row
@@ -181,12 +191,14 @@ def plot_results(pickled_results_path):
                 tarvals = unpack([np.array(df.loc[space,'target_color']) for space in spaces])
                 tarvals = [float(i) for i in tarvals]
                 tarmin = min(tarvals)
-                tarmax = max(tarvals)
+                tarmax = max(tarvals) 
                 c = (c-tarmin)/(tarmax-tarmin) if np.array(c).ndim > 1 else [(i-tarmin)/tarmax for i in c]
                 return np.array(c)
             
             c = normalize_colors() #if space!='latent space' else None
             
+            if space=="reconstructed real space" and ignore_color==True:
+                c = np.array([1]*1000)
             axs[modelpara_ind,space_ind].scatter(df.loc[space,'dim1'],df.loc[space,'dim2'], c=c)
             
             if modelpara_ind==0: axs[modelpara_ind,space_ind].set_title(space, size=15) #fontdict=fontdict)

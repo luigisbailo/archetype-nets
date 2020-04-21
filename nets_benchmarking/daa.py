@@ -8,7 +8,7 @@ Created on Thu Apr  2 12:25:27 2020
 ### lib_at imports:
 import numpy as np
 from scipy.linalg import solve
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #import matplotlib as mpl
 import scipy as sp
 
@@ -19,11 +19,11 @@ tfd = tf.contrib.distributions
 
 ### daa_JAFFE imports:
 #import matplotlib.pyplot as plt
-from datetime import datetime
+#from datetime import datetime
 import os
 #import argparse
-from itertools import compress
-from pathlib import Path
+#from itertools import compress
+#from pathlib import Path
 # scipy stack + tf
 #import numpy as np
 import pandas as pd
@@ -287,14 +287,16 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     #os.environ['QT_QPA_PLATFORM']='offscreen'
     x_train_feat = data['train_feat']
     x_train_targets = data['train_targets']
-    x_test_feat = data['test_feat']
-    x_test_targets = data['test_targets']
+    #x_test_feat = data['test_feat']
+    #x_test_targets = data['test_targets']
     
     
-    runNB = "1"
-    results_path = './Results/JAFFE'
-    test_frequency_epochs = 100
-    save_each = 10000
+# =============================================================================
+#     runNB = "1"
+#     results_path = './Results/JAFFE'
+#     test_frequency_epochs = 100
+#     save_each = 10000
+# =============================================================================
 
     # NN settings
     gpu = '0'
@@ -306,59 +308,63 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     n_targets = x_train_targets.shape[1]
     trainable_var = False
 
-    test_model = False
-    model_substr = None
-
+# =============================================================================
+#     test_model = False
+#     model_substr = None
+# 
+# =============================================================================
     # Different settings for the prior
     vamp_prior = False
     dir_prior = False
-    vamp_num_inducing = 50
+    #vamp_num_inducing = 50
     vae = False
 
     assert not (dir_prior and vamp_prior), "The different priors are mutually exclusive."
     assert 0 < n_targets <= 5, "Choose up to 5 targets."
 
-    nAT = dim_latentspace + 1
+    #nAT = dim_latentspace + 1
 
     # GPU targets
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
-    # all the path/directory stuff
-    CUR_DIR = Path(__file__).resolve().parent
-    RESULTS_DIR = CUR_DIR / 'Results/JAFFE'
-    if not test_model:
-        # create new model directory
-        MODEL_DIR = RESULTS_DIR / "{time}_{run_name}_{dim_lspace}_{mb_size}_{n_epochs}".format(
-            time=datetime.now().replace(second=0, microsecond=0),
-            run_name=runNB, dim_lspace=dim_latentspace, mb_size=batch_size, n_epochs=n_epochs)
-    else:
-        # get latest trained model matching to model_substr
-        all_results = os.listdir(RESULTS_DIR)
-        if model_substr is not None:
-            idx = [model_substr in res for res in all_results]
-            all_results = list(compress(all_results, idx))
-        all_results.sort()
-        MODEL_DIR = RESULTS_DIR / all_results[-1]
-
-    FINAL_RESULTS_DIR = MODEL_DIR / 'final_results/'
-    TENSORBOARD_DIR = MODEL_DIR / 'Tensorboard'
-    IMGS_DIR = MODEL_DIR / 'imgs'
-    SAVED_MODELS_DIR = MODEL_DIR / 'Saved_models/'
-    VIDEO_IMGS_DIR = FINAL_RESULTS_DIR / "video_imgs"
-
-    JAFFE_CSV_P = CUR_DIR / 'jaffe/targets.csv'
-    JAFFE_IMGS_DIR = CUR_DIR / 'jaffe/feats'
-
-    if not test_model:
-        for path in [TENSORBOARD_DIR, SAVED_MODELS_DIR, IMGS_DIR]:
-            os.makedirs(path, exist_ok=True)
+# =============================================================================
+#     # all the path/directory stuff
+#     CUR_DIR = Path(__file__).resolve().parent
+#     RESULTS_DIR = CUR_DIR / 'Results/JAFFE'
+#     if not test_model:
+#         # create new model directory
+#         MODEL_DIR = RESULTS_DIR / "{time}_{run_name}_{dim_lspace}_{mb_size}_{n_epochs}".format(
+#             time=datetime.now().replace(second=0, microsecond=0),
+#             run_name=runNB, dim_lspace=dim_latentspace, mb_size=batch_size, n_epochs=n_epochs)
+#     else:
+#         # get latest trained model matching to model_substr
+#         all_results = os.listdir(RESULTS_DIR)
+#         if model_substr is not None:
+#             idx = [model_substr in res for res in all_results]
+#             all_results = list(compress(all_results, idx))
+#         all_results.sort()
+#         MODEL_DIR = RESULTS_DIR / all_results[-1]
+# 
+#     FINAL_RESULTS_DIR = MODEL_DIR / 'final_results/'
+#     TENSORBOARD_DIR = MODEL_DIR / 'Tensorboard'
+#     IMGS_DIR = MODEL_DIR / 'imgs'
+#     SAVED_MODELS_DIR = MODEL_DIR / 'Saved_models/'
+#     VIDEO_IMGS_DIR = FINAL_RESULTS_DIR / "video_imgs"
+# 
+#     JAFFE_CSV_P = CUR_DIR / 'jaffe/targets.csv'
+#     JAFFE_IMGS_DIR = CUR_DIR / 'jaffe/feats'
+# 
+#     if not test_model:
+#         for path in [TENSORBOARD_DIR, SAVED_MODELS_DIR, IMGS_DIR]:
+#             os.makedirs(path, exist_ok=True)
+# =============================================================================
 
     if seed is not None:
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    nAT = dim_latentspace + 1
+    #nAT = dim_latentspace + 1
     
     def build_loss(version='original'):
         """
@@ -518,11 +524,11 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
 
     ####################################################################################################################
     ############################################# Training Loop ########################################################
-    saver = tf.train.Saver()
+    #saver = tf.train.Saver()
     step = 0
     sess.run(tf.global_variables_initializer())
 
-    writer = tf.summary.FileWriter(logdir=TENSORBOARD_DIR, graph=sess.graph)
+    #writer = tf.summary.FileWriter(logdir=TENSORBOARD_DIR, graph=sess.graph)
     kl_loss_max = kl_loss_factor
     for epoch in range(n_epochs):
         if (epoch+1)/n_epochs in np.linspace(0,1,11): print('epoch no {} of {}'.format(epoch+1,n_epochs))
@@ -546,30 +552,38 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
         feed_test = {data: some_feats, side_information: some_targets}
         summary, test_total_loss, test_likelihood, test_kl, test_atl, test_targetl = sess.run(tensors_test,
                                                                                                     feed_test)
-        if epoch % test_frequency_epochs == 0:
-            writer.add_summary(summary, global_step=step)
-            print(str(runNB) + '\nEpoch ' + str(epoch) + ':\n', 'Total Loss:', test_total_loss,
-                  '\n Feature-Likelihood:', test_likelihood, #np.mean(test_likelihood),
-                  '\n Divergence:', test_kl, # np.mean(test_kl),
-                  '\n Archetype Loss:', test_atl,
-                  '\n Target-Likelihood:', test_targetl, #np.mean(test_targetl), # / target_loss_factor,
-                  )
+# =============================================================================
+#         if epoch % test_frequency_epochs == 0:
+#             writer.add_summary(summary, global_step=step)
+#             print(str(runNB) + '\nEpoch ' + str(epoch) + ':\n', 'Total Loss:', test_total_loss,
+#                   '\n Feature-Likelihood:', test_likelihood, #np.mean(test_likelihood),
+#                   '\n Divergence:', test_kl, # np.mean(test_kl),
+#                   '\n Archetype Loss:', test_atl,
+#                   '\n Target-Likelihood:', test_targetl, #np.mean(test_targetl), # / target_loss_factor,
+#                   )
+# 
+# =============================================================================
+# =============================================================================
+#         if epoch % save_each == 0 and epoch > 0:
+#             saver.save(sess, save_path=SAVED_MODELS_DIR / "save", global_step=epoch)
+# =============================================================================
 
-        if epoch % save_each == 0 and epoch > 0:
-            saver.save(sess, save_path=SAVED_MODELS_DIR / "save", global_step=epoch)
-
-    saver.save(sess, save_path=SAVED_MODELS_DIR / "save", global_step=n_epochs)
+    #saver.save(sess, save_path=SAVED_MODELS_DIR / "save", global_step=n_epochs)
     print("Model Trained!")
-    print("Tensorboard Path: {}".format(TENSORBOARD_DIR))
-    print("Saved Model Path: {}".format(SAVED_MODELS_DIR))
+# =============================================================================
+#     print("Tensorboard Path: {}".format(TENSORBOARD_DIR))
+#     print("Saved Model Path: {}".format(SAVED_MODELS_DIR))
+# =============================================================================
 
-    # create folder for inference results in the folder of the most recently trained model
-    if not FINAL_RESULTS_DIR.exists():
-        os.mkdir(FINAL_RESULTS_DIR)
+# =============================================================================
+#     # create folder for inference results in the folder of the most recently trained model
+#     if not FINAL_RESULTS_DIR.exists():
+#         os.mkdir(FINAL_RESULTS_DIR)
+# =============================================================================
 
         
     df = create_latent_df()
-    df.to_csv(FINAL_RESULTS_DIR / "latent_codes.csv", index=False)
+    #df.to_csv(FINAL_RESULTS_DIR / "latent_codes.csv", index=False)
     df_targets = df.drop(columns=['ldim0','ldim1'])
     
     
@@ -578,6 +592,12 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     
     def asarrays(lst):
         return [np.array(i) for i in lst]
+# =============================================================================
+#     print('xtrainfeat0',x_train_feat[:,0].shape,x_train_feat[:,0])
+#     print('xhat0',xhat[:,0].shape, xhat[:,0])
+#     print('xhat1',xhat[:,1].shape, xhat[:,1])
+#     print('yhat',yhat.shape,yhat)
+# =============================================================================
     result_key = (version, at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_max,anneal)
     result_df = pd.DataFrame({'dim1': asarrays([x_train_feat[:,0], df['ldim0'], xhat[:,0]]),
                            'dim2': asarrays([x_train_feat[:,1], df['ldim1'], xhat[:,1]]),

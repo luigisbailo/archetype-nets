@@ -131,13 +131,16 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
             kl_loss_factor = tfk.backend.variable(0.)
             class NewCallback(tfk.callbacks.Callback):
                 def __init__(self, kl_loss_factor):
-                    self.kl_loss_factor = kl_loss_factor       
+                    self.kl_loss_factor = kl_loss_factor  
+                    #self = kl_loss_factor  
                 def on_epoch_end(self, epoch, logs={}):
                     if epoch <= 100:
-                        tfk.backend.set_value(self.kl_loss_factor, tfk.backend.get_value(self.kl_loss_factor) + epoch/100)
+                        tfk.backend.set_value(self.kl_loss_factor, tfk.backend.get_value(self.kl_loss_factor) + epoch/100*kl_loss_max)
+                        #tfk.backend.set_value(self, tfk.backend.get_value(self.kl_loss_factor) + epoch/100*kl_loss_max)
 
         callbacks = [NewCallback(kl_loss_factor),] if anneal == 1 else None # milena
         
+        print(kl_loss_factor)
         vae_loss = tf.reduce_mean(recon_loss_factor*reconstruction_loss 
                                   + target_loss_factor*class_loss 
                                   + kl_loss_factor*kl_loss 
