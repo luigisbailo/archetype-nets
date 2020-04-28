@@ -499,6 +499,7 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
             return df
         """
         test_pos_mean = None
+        test_pos_sigma = None
         for i in range(all_imgs_ext.shape[0] // batch_size):
             min_idx = i * batch_size
             max_idx = (i + 1) * batch_size
@@ -506,11 +507,20 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
                                                side_information: all_targets[min_idx:max_idx]})
             test_pos_mean = np.vstack((test_pos_mean, tmp_mu)) if test_pos_mean is not None else tmp_mu
             
+            tmp_sigma= sess.run(sigma_t, feed_dict={data: all_feats[min_idx:max_idx],
+                                               side_information: all_targets[min_idx:max_idx]})
+            test_pos_sigma = np.vstack((test_pos_sigma, tmp_sigma)) if test_pos_sigma is not None else tmp_sigma
+            
         test_pos_mean = test_pos_mean[:all_feats.shape[0]]
-        array_all = np.hstack((test_pos_mean, all_targets))
+        test_pos_sigma = test_pos_sigma[:all_feats.shape[0]]
+        array_all = np.hstack((test_pos_mean,test_pos_sigma, all_targets))
+        
         cols_dims = [f'ldim{i}' for i in range(dim_latentspace)]
+        cols_sigma = ['sigma']
         cols_targets = [f'target{i}' for i in range(n_targets)]
-        df = pd.DataFrame(array_all, columns=cols_dims + cols_targets)
+        
+        df = pd.DataFrame(array_all, columns=cols_dims + cols_sigma + cols_targets)
+        
         return df
     
     def extract_xy_hat(df):
@@ -584,8 +594,10 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
         
     df = create_latent_df()
     #df.to_csv(FINAL_RESULTS_DIR / "latent_codes.csv", index=False)
-    df_targets = df.drop(columns=['ldim0','ldim1'])
     
+    df_targets = df[[col for col in df.columns if 'target' in col]]
+    df_features = df[[col for col in df.columns if 'ldim' in col]]
+    df_sigma = df[['sigma']]
     
     xhat,yhat = extract_xy_hat(df.iloc[:,:-n_targets])
     if n_targets == 1: yhat = yhat.reshape(n_total_samples)
@@ -599,8 +611,13 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
 #     print('yhat',yhat.shape,yhat)
 # =============================================================================
     result_key = (version, at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_max,anneal)
-    result_df = pd.DataFrame({'dim1': asarrays([x_train_feat[:,0], df['ldim0'], xhat[:,0]]),
-                           'dim2': asarrays([x_train_feat[:,1], df['ldim1'], xhat[:,1]]),
+# =============================================================================
+#     result_df = pd.DataFrame({'dim1': asarrays([x_train_feat[:,0], df['ldim0'], xhat[:,0]]),
+#                            'dim2': asarrays([x_train_feat[:,1], df['ldim1'], xhat[:,1]]),
+#                            'target_color': asarrays([x_train_targets, df_targets, yhat])},
+#                         index=['real space', 'latent space', 'reconstructed real space'])
+# =============================================================================
+    result_df = pd.DataFrame({'features': [np.array(x_train_feat), tuple([np.array(df_features),np.array(df_sigma)]), np.array(xhat)],
                            'target_color': asarrays([x_train_targets, df_targets, yhat])},
                         index=['real space', 'latent space', 'reconstructed real space'])
     result_dict = {result_key : result_df }

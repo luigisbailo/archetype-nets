@@ -165,18 +165,29 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         
         
         t,mu,sigma, B_t, y = encoder.predict([x_train,np.zeros(np.shape(y_train))])
+        print("mu,sigma")
+        print(mu,sigma)
+        print("sigma is sometimes negative! doesnt make sense, and shouldnt be allowed acc to tfd.Normal documentation! What went wrong, how to fix this?")
         archetypes_pred, z_pred = get_archtypes(x_train)
         x_test_pred, y_test_pred = vae.predict([x_test,np.zeros(np.shape(y_test))])
         
-        x_test1, x_test2 = x_test.T
-        mu1, mu2 = mu.T
-        x_test_pred1, x_test_pred2 = x_test_pred.T
+# =============================================================================
+#         x_test1, x_test2 = x_test.T
+#         mu1, mu2 = mu.T
+#         x_test_pred1, x_test_pred2 = x_test_pred.T
+# =============================================================================
         
         result_key = ('luigi', at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_max,anneal)
-        result_df = pd.DataFrame({'dim1':[x_test1, mu1, x_test_pred1],
-                           'dim2':[x_test2, mu2, x_test_pred2],
-                           'target_color':[y_test,[1]*len(mu1),y_test_pred]},
+# =============================================================================
+#         result_df = pd.DataFrame({'dim1':[x_test1, mu1, x_test_pred1],
+#                            'dim2':[x_test2, mu2, x_test_pred2],
+#                            'target_color':[y_test,[1]*len(mu1),y_test_pred]},
+#                         index=['real space', 'latent space', 'reconstructed real space'])
+# =============================================================================
+        result_df = pd.DataFrame({'features':[x_test, tuple([mu,sigma]), x_test_pred],
+                           'target_color':[y_test,[1]*mu.shape[0],y_test_pred]},
                         index=['real space', 'latent space', 'reconstructed real space'])
+        
         result_dict = {result_key : result_df }
         
         return result_dict

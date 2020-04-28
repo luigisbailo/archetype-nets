@@ -133,11 +133,11 @@ def collect_results(data,
         pickle.dump(results,file)
     
 def works(func, *args, **kwargs):
-        try: 
-            func(*args,**kwargs)
-            return True
-        except:
-            return False
+    try: 
+        func(*args,**kwargs)
+        return True
+    except:
+        return False
         
 def unpack(seq,newtype=None):
     '''If type==None, generators will return generators, other outer container types will be preserved.
@@ -187,7 +187,7 @@ def plot_results(res_filename, ignore_color=False):
         for space_ind, space in enumerate(df.index):
             def normalize_colors():
                 c=df.loc[space,'target_color']
-                spaces = df.index if version!='luigi' else [list(df.index)[i] for i in [0,2]]
+                spaces = df.index #if version!='luigi' else [list(df.index)[i] for i in [0,2]]
                 tarvals = unpack([np.array(df.loc[space,'target_color']) for space in spaces])
                 tarvals = [float(i) for i in tarvals]
                 tarmin = min(tarvals)
@@ -199,7 +199,9 @@ def plot_results(res_filename, ignore_color=False):
             
             if space=="reconstructed real space" and ignore_color==True:
                 c = np.array([1]*1000)
-            axs[modelpara_ind,space_ind].scatter(df.loc[space,'dim1'],df.loc[space,'dim2'], c=c)
+            
+            space_feats = df.loc[space,'features'][0] if space== 'latent space' else df.loc[space,'features']
+            axs[modelpara_ind,space_ind].scatter(space_feats[:,0],space_feats[:,1], c=c)
             
             if modelpara_ind==0: axs[modelpara_ind,space_ind].set_title(space, size=15) #fontdict=fontdict)
             if space_ind==0: axs[modelpara_ind,space_ind].set_ylabel(str(modelpara), fontsize=10) #(ylabel=str(modelpara))
