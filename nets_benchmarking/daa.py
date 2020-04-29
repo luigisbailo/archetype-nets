@@ -515,8 +515,8 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
         test_pos_sigma = test_pos_sigma[:all_feats.shape[0]]
         array_all = np.hstack((test_pos_mean,test_pos_sigma, all_targets))
         
-        cols_dims = [f'ldim{i}' for i in range(dim_latentspace)]
-        cols_sigma = ['sigma']
+        cols_dims = [f'mu{i}' for i in range(dim_latentspace)]
+        cols_sigma = [f'sigma{i}' for i in range(dim_latentspace)]
         cols_targets = [f'target{i}' for i in range(n_targets)]
         
         df = pd.DataFrame(array_all, columns=cols_dims + cols_sigma + cols_targets)
@@ -596,8 +596,8 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     #df.to_csv(FINAL_RESULTS_DIR / "latent_codes.csv", index=False)
     
     df_targets = df[[col for col in df.columns if 'target' in col]]
-    df_features = df[[col for col in df.columns if 'ldim' in col]]
-    df_sigma = df[['sigma']]
+    df_features = df[[col for col in df.columns if 'mu' in col]]
+    df_sigma = df[[col for col in df.columns if 'sigma' in col]]
     
     xhat,yhat = extract_xy_hat(df.iloc[:,:-n_targets])
     if n_targets == 1: yhat = yhat.reshape(n_total_samples)
