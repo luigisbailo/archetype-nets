@@ -183,7 +183,7 @@ def plot_results(res_filename, ignore_color=False):
     modelpara_lst = results.keys() if len(results.keys())==1 else list(results.keys())[::-1]
     for modelpara_ind, modelpara in enumerate(modelpara_lst):
         df = results[modelpara]
-        version = modelpara[0]
+        #version = modelpara[0]
         for space_ind, space in enumerate(df.index):
             def normalize_colors():
                 c=df.loc[space,'target_color']
@@ -205,5 +205,10 @@ def plot_results(res_filename, ignore_color=False):
             
             if modelpara_ind==0: axs[modelpara_ind,space_ind].set_title(space, size=15) #fontdict=fontdict)
             if space_ind==0: axs[modelpara_ind,space_ind].set_ylabel(str(modelpara), fontsize=10) #(ylabel=str(modelpara))
-        
+    print(""""\033[4mIf no plot appears for 'reconstructed real space', please set ignore_color=True in results_daa.plot_results\033[0m"
+                                                                                                                                     
+\033[4mParameters to the left indicate:\033[0m
+(version,at_loss_factor,target_loss_factor,recon_loss_factor,kl_loss_factor,anneal,repetition_#)
+Whether datapreprocessing via normalscores has been conducted can be seen by first entry of filename.
+""")    
     plt.show()

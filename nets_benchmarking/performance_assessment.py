@@ -104,9 +104,11 @@ def hyperpar_comparison(list_of_resultfiles,points_in_simplex,dumpinto='hyp', ov
     - only if overwrite=True, file with name dumpinto will be overwritten if exists
     - with displayrounded = int, pickled results will stay non-rounded, but those returned by function will be."""
     res_path = "results_collections"
-    print(overwrite,os.path.exists(dumpinto))
-    if overwrite is True or not os.path.exists(dumpinto):
-        hyperpar_df = pd.DataFrame(columns=['MSE_feats','MSE_targets','lat_gauss','lat_uniform','n_calcs','faulty'])
+    if (overwrite is False and os.path.exists("{}/{}".format(res_path,dumpinto))):
+        with open("{}/{}".format(res_path,dumpinto), 'rb') as pickled_results:
+            hyperpar_df = pickle.load(pickled_results)
+    else:
+        hyperpar_df = pd.DataFrame(columns=['MSE_feats','MSE_targets','lat_gauss','lat_uniform','tot','err'])
         for filename in list_of_resultfiles:
             def load_results(filename):
                 try:
@@ -135,26 +137,30 @@ def hyperpar_comparison(list_of_resultfiles,points_in_simplex,dumpinto='hyp', ov
             hyperpar_df.at[key,'MSE_targets'] = tuple([np.mean(MSEtar),np.std(MSEtar)]) 
             hyperpar_df.at[key,'lat_gauss'] = tuple([np.mean(latgauss),np.std(latgauss)])
             hyperpar_df.at[key,'lat_uniform'] = tuple([np.mean(latuni),np.std(latuni)])
-            hyperpar_df.at[key,'n_calcs'] = n_calcs
-            hyperpar_df.at[key,'faulty'] = faulty
+            hyperpar_df.at[key,'tot'] = n_calcs
+            hyperpar_df.at[key,'err'] = faulty
         if path.exists(dumpinto):
             dumpinto = dumpinto + '1'
         with open("{}/{}".format(res_path,dumpinto), 'wb') as file:
             pickle.dump(hyperpar_df, file)
-    else:
-        with open("{}/{}".format(res_path,dumpinto), 'rb') as pickled_results:
-            hyperpar_df = pickle.load(pickled_results)
+    
     if isinstance(displayrounded,int):
+        pd.set_option('display.expand_frame_repr', False)
         for ind in hyperpar_df.index:
             for col in ['MSE_feats','MSE_targets','lat_gauss','lat_uniform']:
                 mean, stddev = hyperpar_df.at[ind,col][0],hyperpar_df.at[ind,col][1]
                 hyperpar_df.at[ind,col] = tuple([mean.round(displayrounded),stddev.round(displayrounded)])
+            hyperpar_df = hyperpar_df.rename(index={ind: "".join(ind.split(" "))})
     print('''-> the displayed tuple entries indicate the (mean, std.dev), respectively
-          -> MSE_feats and MSE_targets calculate the mean squared error for feature and target reconstruction
-          -> lat_gauss and lat_uniform compare the summed-up and normalized t-distributions to 
-          standard normal gauss and uniform distribution in triangle, respectively, via hellinger distance. 
-          -> n_calcs indicates number of calculation for resp. hyperpar. 
-          -> faulty indicates how many calculations for respective hyperparameters failed''')
+-> MSE_feats and MSE_targets calculate the mean squared error for feature and target reconstruction
+-> lat_gauss and lat_uniform compare the summed-up and normalized t-distributions to 
+   standard normal gauss and uniform distribution in triangle, respectively, via hellinger distance.
+   Hellinger distance is a metric ranging between 0 and 1; here: the smaller, the better.
+-> tot indicates total number of calculations for resp. hyperpar. 
+-> err indicates how many calculations for respective hyperparameters failed
+
+Tuple entries in hyperpar_df stand for (mean,std.dev) respectively:''')
+    print(hyperpar_df)
     return hyperpar_df
         
         
