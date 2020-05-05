@@ -14,6 +14,8 @@ import tensorflow.keras as tfk
 import tensorflow.keras.layers as tfkl
 import tensorflow_probability.python.distributions as tfd
 import pandas as pd
+from nets_benchmarking.func_collection import get_zfixed
+
 #Three archetypes are defined on a two dimensional space.
 
 
@@ -21,28 +23,6 @@ import pandas as pd
 def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epochs = 100):
     
     def execute(data, at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0,anneal = 0):
-        def get_zfixed ( dim_latent_space ):
-            
-            z_fixed_t = np.zeros([dim_latent_space, dim_latent_space + 1])
-        
-            for k in range(0, dim_latent_space):
-                s = 0.0
-                for i in range(0, k):
-                    s = s + z_fixed_t[i, k] ** 2
-          
-                z_fixed_t[k, k] = np.sqrt(1.0 - s)
-        
-                for j in range(k + 1, dim_latent_space + 1):
-                    s = 0.0
-                    for i in range(0, k):
-                        s = s + z_fixed_t[i, k] * z_fixed_t[i, j]
-        
-                    z_fixed_t[k, j] = (-1.0 / float(dim_latent_space) - s) / z_fixed_t[k, k]
-                    z_fixed = np.transpose(z_fixed_t)
-                            
-            return z_fixed
-        
-        
         #We use variational autoencoders to map the data set into a latent space. The neural network is constructed to force data in latent space to be defined within an arbitrary convex hull. We use a triangular convex hull as shown below. 
         
         zfixed = get_zfixed (2)
@@ -52,7 +32,6 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         y_train = data['train_targets']
         x_test = data['test_feat']
         y_test = data['test_targets']
-        
         
         original_dim = x_train.shape [1]
         try:
@@ -149,15 +128,11 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         vae.compile(optimizer='adam')
         vae.summary()
         
-        
-
         vae.fit([x_train,y_train],  
                 epochs=epochs,
                 batch_size=batch_size,
                 validation_data=([x_test,y_test],None),
                 callbacks = callbacks)
-        
-        
         
         # archetypes
         archetypes,_ = decoder ([z_pred, tf.zeros([3,3])])
@@ -170,6 +145,7 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
         print("sigma is sometimes negative! doesnt make sense, and shouldnt be allowed acc to tfd.Normal documentation! What went wrong, how to fix this?")
         archetypes_pred, z_pred = get_archtypes(x_train)
         x_test_pred, y_test_pred = vae.predict([x_test,np.zeros(np.shape(y_test))])
+        t_test,mu_test,sigma_test, B_t_test, y_testzeros = encoder.predict([x_test,np.zeros(np.shape(y_test))])
         
 # =============================================================================
 #         x_test1, x_test2 = x_test.T
@@ -184,8 +160,8 @@ def build_network(intermediate_dim = 4, batch_size = 1024, latent_dim = 2, epoch
 #                            'target_color':[y_test,[1]*len(mu1),y_test_pred]},
 #                         index=['real space', 'latent space', 'reconstructed real space'])
 # =============================================================================
-        result_df = pd.DataFrame({'features':[x_test, tuple([mu,sigma]), x_test_pred],
-                           'target_color':[y_test,[1]*mu.shape[0],y_test_pred]},
+        result_df = pd.DataFrame({'features':[x_test, (mu_test,sigma_test), x_test_pred],
+                           'target_color':[y_test,y_test,y_test_pred]}, # [1]*mu.shape[0]
                         index=['real space', 'latent space', 'reconstructed real space'])
         
         result_dict = {result_key : result_df }

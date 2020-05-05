@@ -6,53 +6,7 @@ from scipy.stats import multivariate_normal
 import os 
 import pickle 
 from collections import OrderedDict
-
-def get_zfixed ( dim_latent_space ):
-            
-    z_fixed_t = np.zeros([dim_latent_space, dim_latent_space + 1])
-
-    for k in range(0, dim_latent_space):
-        s = 0.0
-        for i in range(0, k):
-            s = s + z_fixed_t[i, k] ** 2
-  
-        z_fixed_t[k, k] = np.sqrt(1.0 - s)
-
-        for j in range(k + 1, dim_latent_space + 1):
-            s = 0.0
-            for i in range(0, k):
-                s = s + z_fixed_t[i, k] * z_fixed_t[i, j]
-
-            z_fixed_t[k, j] = (-1.0 / float(dim_latent_space) - s) / z_fixed_t[k, k]
-            z_fixed = np.transpose(z_fixed_t)
-                    
-    return z_fixed
-
-def points_in_simplex(zfixed,fineness):
-    """Calculates positions of equally distributed points in simplex, 
-    whose distance to their neighbors decreases with fineness."""
-    dim_latent_space = zfixed.shape[1]
-    
-    res_path = "results_collections"
-    filename = 'points_in_triangle({},{})'.format(dim_latent_space,fineness)
-    
-    if path.exists("{}/{}".format(res_path,filename)):
-        points = np.array(pd.read_csv("{}/{}".format(res_path,filename)))
-    
-    else:
-        
-        def weights(dim_latent_space=dim_latent_space,fineness=fineness):
-            x = np.expand_dims(np.linspace(0,1,fineness+1),axis=1)
-            A = np.array([[0]*(dim_latent_space+1)])
-            for i in list(itt.product(*[x]*(dim_latent_space+1)))[1:]:
-                if np.sum(np.array(i))<=1:
-                    A = np.concatenate((A,np.array(i).T),axis=0)
-            return A
-
-        points = np.matmul(weights(),zfixed)
-        pd.DataFrame(points).to_csv(filename, index=False)
-    
-    return points
+#from func_collection import get_zfixed, points_in_simplex
 
 def hellingerdistance(mus,sigmas,points_in_simplex):
     """Calculates metric between [0,1] of "distance" between two distributions (0->same distributions)

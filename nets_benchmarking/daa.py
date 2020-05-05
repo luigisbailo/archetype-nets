@@ -28,6 +28,7 @@ import os
 #import numpy as np
 import pandas as pd
 import tensorflow as tf
+from nets_benchmarking.func_collection import get_zfixed
 # custom libs
 #from AT_lib import lib_vae, lib_at
 #tfd = tf.contrib.distributions
@@ -83,24 +84,8 @@ class lib_at:
         :param dim_latent_space:
         :return:
         """
-    
-        z_fixed_t = np.zeros([dim_latent_space, dim_latent_space + 1])
-    
-        for k in range(0, dim_latent_space):
-            s = 0.0
-            for i in range(0, k):
-                s = s + z_fixed_t[i, k] ** 2
-    
-            z_fixed_t[k, k] = np.sqrt(1.0 - s)
-    
-            for j in range(k + 1, dim_latent_space + 1):
-                s = 0.0
-                for i in range(0, k):
-                    s = s + z_fixed_t[i, k] * z_fixed_t[i, j]
-    
-                z_fixed_t[k, j] = (-1.0 / float(dim_latent_space) - s) / z_fixed_t[k, k]
-                z_fixed = np.transpose(z_fixed_t)
-        return z_fixed
+        return get_zfixed(dim_latent_space)
+
         
     def barycentric_coords(n_per_axis=5):
         """
@@ -282,7 +267,7 @@ class lib_vae:
 ##########################################################################################################
 ## daa_JAFFE code:
 
-def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0, anneal=0):
+def execute(data, version = 'original', epochs=100,at_loss_factor=8.0, target_loss_factor=8.0,recon_loss_factor=4.0,kl_loss_factor=4.0, anneal=0):
     # If error message "Could not connect to any X display." is issued, uncomment the following line:
     #os.environ['QT_QPA_PLATFORM']='offscreen'
     x_train_feat = data['train_feat']
@@ -301,7 +286,7 @@ def execute(data, version = 'original', at_loss_factor=8.0, target_loss_factor=8
     # NN settings
     gpu = '0'
     learning_rate = 1e-4
-    n_epochs = 100           # 5001 in original code
+    n_epochs = epochs           # 5001 in original code
     batch_size = 50
     dim_latentspace =2
     seed = None
