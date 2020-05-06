@@ -73,7 +73,7 @@ class VAE:
 
         return vae, outputs
 
-    def add_loss(self):
+    def add_loss(self, reconstruction_factor, class_factor, kl_factor, archetype_factor):
 
         z_fixed = self.get_zfixed()
 
@@ -84,10 +84,8 @@ class VAE:
         kl_loss = tf.reduce_sum(kl_loss, axis=-1)
         kl_loss *= -0.5
 
-        lambda_p = 1
-        nu_p = 1
-
-        vae_loss = tf.reduce_mean(nu_p * reconstruction_loss + lambda_p * class_loss + kl_loss + archetype_loss)
+        vae_loss = tf.reduce_mean(reconstruction_factor * reconstruction_loss + class_factor * class_loss +
+                                  kl_factor * kl_loss + archetype_factor * archetype_loss)
         self.network.add_loss(vae_loss)
 
     def get_zfixed(self):
