@@ -56,3 +56,13 @@ def points_in_simplex(zfixed,fineness):
         pd.DataFrame(points).to_csv("{}/{}".format(res_path,filename), index=False)
     
     return points
+
+# written for data creation and separation, but not necessary in the end
+# might still be useful for future applications:
+def alsotuples_firstarg(func):
+    def newfunc(*args):
+        if isinstance(args[0],tuple):
+            disentangled = [[*[args[0][i],*args[1:]]] for i in range(len(args[0]))]
+            return tuple([func(*i) for i in disentangled])
+        else: return func(*args)
+    return newfunc

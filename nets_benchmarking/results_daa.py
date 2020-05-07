@@ -28,7 +28,7 @@ def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
             data = np.matmul(rand,joined)
             data = data + np.random.normal(0,noise,size=data.shape)
             feat, target = data[:,:-1], data[:,-1]
-            return feat, target
+            return None, feat, target
         
         if version==2:
             k = len(archs)
@@ -44,7 +44,7 @@ def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
             Y1=Y1/np.max(Y1)
             Y2=Y2/np.max(Y2)
             Y=np.concatenate((np.expand_dims(Y0,axis=1),np.expand_dims(Y1,axis=1),np.expand_dims(Y2,axis=1)),axis=1)
-            return data, Y
+            return None, data, Y
         
         if isinstance(version,tuple):
             """Creates real_space data based on perfectly uniformly distributed points in latent space of selectable dim,
@@ -73,9 +73,9 @@ def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
                 
                 return {0: [self for i in range(6)], #no trafo
                         1: [lin(a) for a in [2.5,44,1009,0.02,30,0.0004]], # lin trafo
-                        2: [np.exp]+[poly(a) for a in [2,10,3,7,9]], # monotonic non linear
+                        2: [np.exp]+[poly(a) for a in [3,5,7,9,11]], # monotonic non linear
                         3: [gaus(loc_scale) for loc_scale in [(0,1),(30,0.0003),(-2,50),(4,25),(14,2),(0.5,3)]], #non monotonic non linear
-                        4: [sinn(a) for a in [3,5000,0.03]]+[coss(a) for a in [0.24,100,23]]} # periodic
+                        4: [func(a) for a in [1.55,1000,0.1] for func in [coss,sinn]]} # periodic
             
             def trafos(simplex_points,scale_lat_real,complexity_dict,maxlevel,distr):
                 dim_lat = simplex_points.shape[1]
@@ -96,15 +96,16 @@ def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
                         if (lat_i,scale_no)==(0,0): real_space = converted  
                         else:                       real_space = np.concatenate((real_space,converted),axis=1)
                 return real_space
-            
+             
             # set up 'perfect' latent space
             zfixed = get_zfixed(dim_lat)
             simplex_points = points_in_simplex(zfixed,max(int(n_points**(1/(dim_lat+1))),1))
             target = np.array([np.sum(pi) for pi in simplex_points])
             
-            # derive real space acc 
+            # calculate real space based on latent space:
             real_space = trafos(simplex_points,scale_lat_real,complexity_dict(),maxlevel,distr)
-            return real_space, target
+           
+            return simplex_points, real_space, target
             
     def normal_scores(list_of_arrays):
          
@@ -140,14 +141,15 @@ def create_data(no_train=100000, no_test=1000, normalscores=True, version=2):
             
         return list_of_arrays
     
-    x_train_feat, x_train_targets = generate_data (no_train)
-    x_test_feat, x_test_targets = generate_data (no_test)
+    simplex_train, x_train_feat, x_train_targets = generate_data (no_train)
+    simplex_test, x_test_feat, x_test_targets = generate_data (no_test)
     
     if normalscores==True:
         [x_train_feat, x_train_targets,x_test_feat, x_test_targets] = normal_scores(
                                         [x_train_feat, x_train_targets,x_test_feat, x_test_targets])
     datadict = {'train_feat': x_train_feat, 'train_targets': x_train_targets, 
-                'test_feat': x_test_feat, 'test_targets': x_test_targets}
+                'test_feat': x_test_feat, 'test_targets': x_test_targets,
+                'train_simplex': simplex_train, 'test_simplex': simplex_test}
     return datadict
 
 def collect_results(data,
